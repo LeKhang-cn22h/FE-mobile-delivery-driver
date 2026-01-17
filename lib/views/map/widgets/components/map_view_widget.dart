@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
-import '../../constants/map_constants.dart';
+
+import '../../../../constants/map_constants.dart';
+
 
 class MapViewWidget extends StatelessWidget {
   final Function(MapLibreMapController) onMapCreated;

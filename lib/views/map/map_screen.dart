@@ -66,10 +66,26 @@ class _MapScreenState extends State<MapScreen> with MapLogicMixin {
           ] else ...[
             const CheckRouteButton(),
             _buildSideListButton(),
+            _buildOrdersListButton(),
             LocationButton(onPressed: moveToUser),
             const StartNavigationButton(),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildOrdersListButton() {
+    return Positioned(
+      bottom: 160,  // Phía trên button route list
+      right: 16,
+      child: FloatingActionButton(
+        mini: true,
+        heroTag: 'orders_list_fab',
+        backgroundColor: Colors.white,
+        onPressed: () => Navigator.pushNamed(context, '/orders'),
+        tooltip: 'Danh sách đơn hàng',
+        child: const Icon(Icons.receipt, color: Colors.orange),
       ),
     );
   }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1056514423021",
+    "project_id": "fe-mobile-delivery",
+    "storage_bucket": "fe-mobile-delivery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1056514423021:android:943e35f489accb34f374e4",
+        "android_client_info": {
+          "package_name": "com.example.test_f"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCAgkKFDJ0oLFRl5n7Shv9zQQ5um-QNH1A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

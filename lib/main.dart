@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'viewmodels/location_viewmodel.dart';
 import 'viewmodels/route_viewmodel.dart';
 import 'viewmodels/navigation_viewmodel.dart';
-import 'views/screens/map_screen.dart';
+import 'views/map/map_screen.dart';
 
-void main() {
+import 'orders/injection/order_injection.dart';
+import 'orders/presentation/views/order_list_screen.dart';
+import 'notifications/domain/usecases/init_fcm_usecase.dart';
+
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  // Initialize FCM
+  await InitFcmUsecase().call();
+
   runApp(
     MultiProvider(
       providers: [
@@ -21,6 +30,8 @@ void main() {
         ChangeNotifierProvider(
           create: (_) => NavigationViewModel(),
         ),
+        // Thêm orders
+        ...OrderInjection.getProviders(),
       ],
       child: const MyApp(),
     ),
@@ -40,6 +51,10 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const MapScreen(),
+      // Thêm router cho orders
+      routes: {
+        '/orders': (_) => const OrderListScreen(),
+      },
     );
   }
 }

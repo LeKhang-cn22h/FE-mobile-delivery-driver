@@ -1,0 +1,95 @@
+[
+  {
+    "id": "1",
+    "code": "DH-001",
+    "customerName": "Nguyễn Văn A",
+    "address": "100 Nguyễn Hữu Cảnh, Bình Thạnh, TP.HCM",
+    "phone": "0909123456",
+    "expectedTime": "2026-01-18T14:00:00+07:00",
+    "status": "PENDING"
+  },
+  {
+    "id": "2",
+    "code": "DH-002",
+    "customerName": "Trần Thị B",
+    "address": "120 Nguyễn Hữu Cảnh, Bình Thạnh, TP.HCM",
+    "phone": "0909234567",
+    "expectedTime": "2026-01-18T14:15:00+07:00",
+    "status": "PENDING"
+  },
+  {
+    "id": "3",
+    "code": "DH-003",
+    "customerName": "Lê Văn C",
+    "address": "250 Cộng Hòa, Tân Bình, TP.HCM",
+    "phone": "0909345678",
+    "expectedTime": "2026-01-18T14:45:00+07:00",
+    "status": "PENDING"
+  },
+  {
+    "id": "4",
+    "code": "DH-004",
+    "customerName": "Phạm Minh D",
+    "address": "320 Cộng Hòa, Tân Bình, TP.HCM",
+    "phone": "0909456789",
+    "expectedTime": "2026-01-18T15:00:00+07:00",
+    "status": "PENDING"
+  },
+  {
+    "id": "5",
+    "code": "DH-005",
+    "customerName": "Đặng Thúy E",
+    "address": "85 Lê Lợi, Quận 1, TP.HCM",
+    "phone": "0909567890",
+    "expectedTime": "2026-01-18T15:30:00+07:00",
+    "status": "PENDING"
+  },
+  {
+    "id": "6",
+    "code": "DH-006",
+    "customerName": "Hoàng Kim F",
+    "address": "150 Lê Lợi, Quận 1, TP.HCM",
+    "phone": "0909678901",
+    "expectedTime": "2026-01-18T15:45:00+07:00",
+    "status": "PENDING"
+  },
+  {
+    "id": "7",
+    "code": "DH-007",
+    "customerName": "Vũ Thế G",
+    "address": "45 Hai Bà Trưng, Quận 3, TP.HCM",
+    "phone": "0909789012",
+    "expectedTime": "2026-01-18T16:00:00+07:00",
+    "status": "COMPLETED",
+    "completedAt": "2026-01-18T16:05:00+07:00"
+  },
+  {
+    "id": "8",
+    "code": "DH-008",
+    "customerName": "Bùi Văn H",
+    "address": "200 Hai Bà Trưng, Quận 3, TP.HCM",
+    "phone": "0909890123",
+    "expectedTime": "2026-01-18T16:20:00+07:00",
+    "status": "COMPLETED",
+    "completedAt": "2026-01-18T16:25:00+07:00"
+  },
+  {
+    "id": "9",
+    "code": "DH-009",
+    "customerName": "Trương Quỳnh I",
+    "address": "88 Phan Xích Long, Phú Nhuận, TP.HCM",
+    "phone": "0909901234",
+    "expectedTime": "2026-01-18T16:45:00+07:00",
+    "status": "PENDING"
+  },
+  {
+    "id": "10",
+    "code": "DH-010",
+    "customerName": "Ngô Hữu J",
+    "address": "180 Phan Xích Long, Phú Nhuận, TP.HCM",
+    "phone": "0910012345",
+    "expectedTime": "2026-01-18T17:00:00+07:00",
+    "status": "CANCELLED",
+    "cancelNote": "Khách không trả lời điện thoại"
+  }
+]

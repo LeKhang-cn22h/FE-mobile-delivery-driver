@@ -8,9 +8,9 @@ class InitFcmUsecase {
   Future<void> call() async {
     try {
       await _dataSource.initialize();
-      print('✅ FCM usecase executed successfully');
+      print(' FCM usecase executed successfully');
     } catch (e) {
-      print('❌ FCM init error: $e');
+      print(' FCM init error: $e');
       rethrow;
     }
   }

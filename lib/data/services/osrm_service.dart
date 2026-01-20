@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart';
 import '../models/route_point.dart';
@@ -95,5 +96,23 @@ class OsrmService {
       "time": "${(route['duration'] / 60).toStringAsFixed(0)} phút",
       "distance": "${(route['distance'] / 1000).toStringAsFixed(1)} km",
     };
+  }
+  Future<LatLng?> snapUserToRoad(LatLng user) async {
+    try {
+      final url = Uri.parse(
+          'https://router.project-osrm.org/nearest/v1/driving/${user.longitude},${user.latitude}?number=1');
+
+      final res = await http.get(url);
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['waypoints'] != null && data['waypoints'].isNotEmpty) {
+          final List coords = data['waypoints'][0]['location'];
+          return LatLng(coords[1], coords[0]); // OSRM trả về [lng, lat]
+        }
+      }
+    } catch (e) {
+      debugPrint("Lỗi Snap: $e");
+    }
+    return null;
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:test_f/views/login/widgets/email_field.dart';
-import 'package:test_f/views/login/widgets/password_field.dart';
+import 'package:test_f/views/auth/login/widgets/email_field.dart';
+import 'package:test_f/views/auth/login/widgets/password_field.dart';
 class LoginForm extends StatelessWidget {
   final TextEditingController Econtroller;
   final TextEditingController Pcontroller;

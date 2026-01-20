@@ -1,7 +1,8 @@
 import 'package:go_router/go_router.dart';
 import 'package:test_f/routes/shell_route.dart';
-import '../views/login/login_page.dart';
-import '../views/register/Register_page.dart';
+import '../views/auth/login/login_page.dart';
+import '../views/auth/register/Register_page.dart';
+
 import 'route_paths.dart';
 import 'route_names.dart';
 

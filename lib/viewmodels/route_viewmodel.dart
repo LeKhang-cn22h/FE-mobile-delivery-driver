@@ -10,6 +10,9 @@ class RouteViewModel extends ChangeNotifier {
   bool _shouldRedrawMarkers = true;
   bool get shouldRedrawMarkers => _shouldRedrawMarkers;
 
+  double totalDistanceKm = 0;
+  String totalDistanceText = "0 km";
+
   List<LatLng> routeLine = [];
   List<RoutePoint> sortedPoints = [];
   bool _isCalculating = false;
@@ -38,13 +41,16 @@ class RouteViewModel extends ChangeNotifier {
       }
 
       // Gọi API lấy tọa độ đường đi để vẽ lên bản đồ
-      final result = await OsrmService.route(
+      final result = await OsrmService.routeWithInfo(
         userPos.latitude,
         userPos.longitude,
         sortedPoints,
       );
 
-      routeLine = result;
+      routeLine = result.geometry;
+      totalDistanceKm = result.distanceMeters / 1000;
+      totalDistanceText = "${totalDistanceKm.toStringAsFixed(1)} km";
+
     } catch (e) {
       debugPrint("Lỗi khi tính toán lộ trình: $e");
     } finally {

@@ -35,33 +35,7 @@ class OsrmService {
         .toList();
   }
 
-  static Future<List<LatLng>> route(
-      double fromLat,
-      double fromLng,
-      List<RoutePoint> points,
-      ) async {
-    final coords = [
-      "$fromLng,$fromLat",
-      ...points.map((p) => "${p.lng},${p.lat}")
-    ].join(";");
 
-    final url = Uri.parse(
-      "$_base/route/v1/driving/$coords"
-          "?overview=full&geometries=geojson",
-    );
-
-    final res = await http.get(url);
-    final json = jsonDecode(res.body);
-
-    final List<dynamic> coordinates =
-    json['routes'][0]['geometry']['coordinates'];
-
-    return coordinates.map<LatLng>((c) {
-      final lon = (c[0] as num).toDouble();
-      final lat = (c[1] as num).toDouble();
-      return LatLng(lat, lon);
-    }).toList();
-  }
 
   static Future<Map<String, dynamic>> navigationInfo(
       double fromLat,
@@ -115,4 +89,44 @@ class OsrmService {
     }
     return null;
   }
+  static Future<RouteResult> routeWithInfo(
+      double startLat,
+      double startLng,
+      List<RoutePoint> points,
+      ) async {
+    final coords = [
+      "$startLng,$startLat",
+      ...points.map((p) => "${p.lng},${p.lat}")
+    ].join(';');
+
+    final url = Uri.parse(
+      "$_base/route/v1/driving/$coords?overview=full&geometries=geojson",
+    );
+
+    final res = await http.get(url);
+    final data = jsonDecode(res.body);
+    final route = data['routes'][0];
+
+    final geometry = (route['geometry']['coordinates'] as List)
+        .map((c) => LatLng(c[1], c[0]))
+        .toList();
+
+    return RouteResult(
+      geometry: geometry,
+      distanceMeters: (route['distance'] as num).toDouble(),
+      durationSeconds: (route['duration'] as num).toDouble(),
+    );
+  }
+}
+
+class RouteResult {
+  final List<LatLng> geometry;
+  final double distanceMeters;
+  final double durationSeconds;
+
+  RouteResult({
+    required this.geometry,
+    required this.distanceMeters,
+    required this.durationSeconds,
+  });
 }

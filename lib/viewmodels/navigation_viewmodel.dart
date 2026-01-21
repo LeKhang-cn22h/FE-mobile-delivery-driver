@@ -25,6 +25,19 @@ class NavigationViewModel extends ChangeNotifier {
   /// REROUTE COOLDOWN
   /// ===============================
   DateTime _lastRecalc = DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime _lastUpdate = DateTime.fromMillisecondsSinceEpoch(0);
+
+  DateTime _lastNavUpdate = DateTime.fromMillisecondsSinceEpoch(0);
+
+  bool get canUpdateNav =>
+      DateTime.now().difference(_lastNavUpdate).inSeconds >= 2;
+
+  void markNavUpdated() {
+    _lastNavUpdate = DateTime.now();
+  }
+  bool get canUpdate =>
+      DateTime.now().difference(_lastUpdate).inSeconds >= 3;
+
 
   bool get canRecalculate =>
       DateTime.now().difference(_lastRecalc).inSeconds >= 15;
@@ -62,6 +75,10 @@ class NavigationViewModel extends ChangeNotifier {
       LatLng currentPos,
       RoutePoint destination,
       ) async {
+    if (!canUpdate) return;
+
+    _lastUpdate = DateTime.now();
+
     final data = await OsrmService.navigationInfo(
       currentPos.latitude,
       currentPos.longitude,
@@ -69,9 +86,9 @@ class NavigationViewModel extends ChangeNotifier {
     );
 
     if (data.isNotEmpty) {
-      currentInstruction = data['instruction'] ?? "Đi thẳng";
-      remainingTime = data['time'] ?? "0 phút";
-      remainingDistance = data['distance'] ?? "0 km";
+      currentInstruction = data['instruction'] ?? currentInstruction;
+      remainingTime = data['time'] ?? remainingTime;
+      remainingDistance = data['distance'] ?? remainingDistance;
       notifyListeners();
     }
   }

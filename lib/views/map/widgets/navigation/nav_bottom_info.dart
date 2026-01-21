@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../viewmodels/location_viewmodel.dart';
+import '../../../../viewmodels/navigation_viewmodel.dart';
+import '../../../../viewmodels/route_viewmodel.dart';
 
 
 class NavBottomInfo extends StatelessWidget {
@@ -18,6 +20,11 @@ class NavBottomInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final navVM = context.watch<NavigationViewModel>();
+    final totalDistanceText =
+    context.select<RouteViewModel, String>((vm) => vm.totalDistanceText);
+
+
     return Positioned(
       bottom: 0,
       left: 0,
@@ -62,7 +69,7 @@ class NavBottomInfo extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      time,
+                      navVM.remainingTime, // hoặc time nếu mày đã bind đúng
                       style: const TextStyle(
                         color: Color(0xFFE67E22),
                         fontSize: 24,
@@ -70,7 +77,7 @@ class NavBottomInfo extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      "$distance • 16:35",
+                      "$totalDistanceText",
                       style: const TextStyle(
                         color: Colors.black54,
                         fontSize: 16,

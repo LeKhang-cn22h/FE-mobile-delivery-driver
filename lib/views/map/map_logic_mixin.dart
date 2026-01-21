@@ -55,8 +55,7 @@ mixin MapLogicMixin<T extends StatefulWidget> on State<T> {
 
     final snapped = await _osrmService.snapUserToRoad(rawPos);
     if (snapped != null) {
-      if (!navVM.isNavigating) return;
-      if (routeVM.routeLine.isEmpty) return;
+      locationVM.setSnappedPosition(snapped);
       _lastSnapTime = DateTime.now();
     }
   }
@@ -77,6 +76,9 @@ mixin MapLogicMixin<T extends StatefulWidget> on State<T> {
     controller!.updateContentInsets(
       const EdgeInsets.only(bottom: 220),
     );
+    final map = controller;
+    if (map == null) return;
+
 
     controller!.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -166,11 +168,14 @@ mixin MapLogicMixin<T extends StatefulWidget> on State<T> {
           locationVM.snappedPosition ?? rawPos;
 
 // ====== NAVIGATION INFO (RAW GPS) ======
-      if (navVM.isNavigating && routeVM.sortedPoints.isNotEmpty) {
-        navVM.updateNavigationData(
+      if (navVM.isNavigating &&
+          routeVM.sortedPoints.isNotEmpty &&
+          navVM.canUpdateNav) {
+        await navVM.updateNavigationData(
           rawPos,
           routeVM.sortedPoints.first,
         );
+        navVM.markNavUpdated();
       }
 
 // ====== CAMERA + MAP (RENDER POS) ======

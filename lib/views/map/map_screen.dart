@@ -66,11 +66,11 @@ class _MapScreenState extends State<MapScreen>
           /// ================= NAVIGATION MODE =================
           if (navVM.isNavigating) ...[
             NavInstructionPanel(
-              instruction: routeVM.currentInstruction,
+              instruction: navVM.currentInstruction,
             ),
             NavBottomInfo(
-              time: routeVM.remainingTime,
-              distance: routeVM.remainingDistance,
+              time: navVM.remainingTime,
+              distance: navVM.remainingDistance,
               onStop: () {
                 controller?.updateContentInsets(EdgeInsets.zero);
                 controller?.animateCamera(CameraUpdate.tiltTo(0));
@@ -90,8 +90,8 @@ class _MapScreenState extends State<MapScreen>
               onStart: () async {
                 final navVM = context.read<NavigationViewModel>();
 
-                navVM.toggleNavigation(); // bật navigation
-                await onStartNavigation(); // SNAP NGAY
+                navVM.toggleNavigation(); // bật trước
+                await onStartNavigation(); // snap + camera
               },
             ),
           ],

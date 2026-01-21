@@ -14,8 +14,10 @@ mixin MapLogicMixin<T extends StatefulWidget> on State<T> {
   /// ===============================
   /// MAP STATE
   /// ===============================
+  bool _isUpdatingMap = false;
   MapLibreMapController? controller;
   Line? routeLine;
+
 
   bool movedOnce = false;
   bool isDialogShowing = false;
@@ -32,114 +34,153 @@ mixin MapLogicMixin<T extends StatefulWidget> on State<T> {
   /// ===============================
   /// MAIN MAP UPDATE LOOP
   /// ===============================
-  Future<void> handleMapUpdate() async {
-    if (controller == null) return;
 
-    final locationVM = context.read<LocationViewModel>();
-    final routeVM = context.read<RouteViewModel>();
-    final navVM = context.read<NavigationViewModel>();
-
+  Future<void> _handleSnap(
+      LocationViewModel locationVM,
+      RouteViewModel routeVM,
+      NavigationViewModel navVM,
+      ) async {
     final rawPos = locationVM.rawPosition;
     if (rawPos == null) return;
 
-    /// ===============================
-    /// SNAP USER TO ROAD
-    /// ===============================
-    if (navVM.isNavigating && _canSnap) {
-      final snapped = await _osrmService.snapUserToRoad(rawPos);
-      if (snapped != null) {
-        locationVM.setSnappedPosition(snapped); // Đẩy vào VM
-        _lastSnapTime = DateTime.now();
-      }
-    }
+    if (!navVM.isNavigating || !_canSnap) return;
 
-    final userPos = locationVM.currentPosition!;
-    /// ===============================
-
-    /// ===============================
-    /// CAMERA CONTROL
-    /// ===============================
-    if (navVM.isNavigating) {
-      routeVM.updateNavigationData(userPos);
-
-      controller!.updateContentInsets(
-        const EdgeInsets.only(bottom: 220),
-      );
-
-      controller!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: userPos,
-            zoom: 18,
-            tilt: 60,
-            bearing: locationVM.heading,
-          ),
-        ),
-      );
-    } else if (!movedOnce) {
-      movedOnce = true;
-      moveToUser();
-    }
-
-    /// ===============================
-    /// ROUTE LOGIC
-    /// ===============================
-    if (routeVM.routeLine.isNotEmpty) {
-      final isOffRoute = RouteLogicHandler.isUserOffRoute(
-        userPos,
-        routeVM.routeLine,
-      );
-
-      if (isOffRoute && !routeVM.isCalculating) {
-        routeVM.calculateTodayRoute(userPos);
-        return;
-      }
-
-      final remainingRoute =
-      RouteLogicHandler.trimPassedRoute(
-        routeVM.routeLine,
-        userPos,
-      );
-
-      routeLine = await MapUtils.drawRoute(
-        controller!,
-        remainingRoute,
-        oldLine: routeLine,
-      );
-    }
-
-    /// ===============================
-    /// ARRIVAL CHECK
-    /// ===============================
-    if (navVM.pendingPoint == null && !isDialogShowing) {
-      final arrivedPoint =
-      RouteLogicHandler.checkArrival(
-        userPos,
-        routeVM.sortedPoints,
-      );
-
-      if (arrivedPoint != null) {
-        navVM.setPendingPoint(arrivedPoint);
-        showArrivalDialog(navVM, routeVM);
-      }
-    }
-
-    /// ===============================
-    /// DRAW MARKERS
-    /// ===============================
-    await MapUtils.drawMarkers(
-      controller!,
-      routeVM.sortedPoints,
+    final isOffRoute = RouteLogicHandler.isUserOffRoute(
+      rawPos,
+      routeVM.routeLine,
+      threshold: 25,
     );
 
-    /// ===============================
-    /// USER MARKER (SNAPPED POSITION)
-    /// ===============================
+    if (isOffRoute) return;
+
+    final snapped = await _osrmService.snapUserToRoad(rawPos);
+    if (snapped != null) {
+      if (!navVM.isNavigating) return;
+      if (routeVM.routeLine.isEmpty) return;
+      _lastSnapTime = DateTime.now();
+    }
+  }
+
+  void _handleCamera(
+      LatLng userPos,
+      LocationViewModel locationVM,
+      NavigationViewModel navVM,
+      ) {
+    if (!navVM.isNavigating) {
+      if (!movedOnce) {
+        movedOnce = true;
+        moveToUser();
+      }
+      return;
+    }
+
+    controller!.updateContentInsets(
+      const EdgeInsets.only(bottom: 220),
+    );
+
+    controller!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: userPos,
+          zoom: 18,
+          tilt: 60,
+          bearing: locationVM.heading,
+        ),
+      ),
+    );
+  }
+  Future<void> _handleRouteLogic(
+      LatLng userPos,
+      RouteViewModel routeVM,
+      NavigationViewModel navVM,
+      ) async {
+    if (routeVM.routeLine.isEmpty) return;
+
+    final isOffRoute = RouteLogicHandler.isUserOffRoute(
+      userPos,
+      routeVM.routeLine,
+    );
+
+    if (isOffRoute &&
+        navVM.canRecalculate &&
+        !routeVM.isCalculating) {
+      navVM.markRecalculated();
+      await routeVM.calculateTodayRoute(userPos);
+      return;
+    }
+
+    final effectiveRoute = navVM.isNavigating
+        ? RouteLogicHandler.trimPassedRoute(
+      routeVM.routeLine,
+      userPos,
+    )
+        : routeVM.routeLine;
+
+    if (effectiveRoute.length < 2) return;
+
+    routeLine = await MapUtils.drawRoute(
+      controller!,
+      effectiveRoute,
+      oldLine: routeLine,
+    );
+  }
+
+  Future<void> _handleMarkers(
+      LatLng userPos,
+      LocationViewModel locationVM,
+      RouteViewModel routeVM,
+      ) async {
     await MapUtils.drawOrUpdateUserMarker(
       controller!,
       userPos,
       locationVM.heading,
     );
+
+    if (routeVM.shouldRedrawMarkers) {
+      await MapUtils.drawMarkers(
+        controller!,
+        routeVM.sortedPoints,
+      );
+      routeVM.markMarkersDrawn();
+    }
+  }
+
+  Future<void> handleMapUpdate() async {
+    if (_isUpdatingMap) return;
+    _isUpdatingMap = true;
+
+    try {
+      if (controller == null) return;
+
+      final locationVM = context.read<LocationViewModel>();
+      final routeVM = context.read<RouteViewModel>();
+      final navVM = context.read<NavigationViewModel>();
+
+      await _handleSnap(locationVM, routeVM, navVM);
+
+      final rawPos = locationVM.rawPosition;
+      if (rawPos == null) return;
+
+// vị trí dùng để vẽ
+      final renderPos =
+          locationVM.snappedPosition ?? rawPos;
+
+// ====== NAVIGATION INFO (RAW GPS) ======
+      if (navVM.isNavigating && routeVM.sortedPoints.isNotEmpty) {
+        navVM.updateNavigationData(
+          rawPos,
+          routeVM.sortedPoints.first,
+        );
+      }
+
+// ====== CAMERA + MAP (RENDER POS) ======
+      _handleCamera(renderPos, locationVM, navVM);
+      await _handleRouteLogic(renderPos, routeVM, navVM);
+      await _handleMarkers(renderPos, locationVM, routeVM);
+
+    } finally {
+      _isUpdatingMap = false;
+    }
   }
 
   /// ===============================
@@ -202,41 +243,14 @@ mixin MapLogicMixin<T extends StatefulWidget> on State<T> {
   /// START NAVIGATION (SNAP NGAY)
   /// ===============================
   Future<void> onStartNavigation() async {
-    if (controller == null) return;
-
     final locationVM = context.read<LocationViewModel>();
-    final navVM = context.read<NavigationViewModel>();
-    final routeVM = context.read<RouteViewModel>();
-
     final rawPos = locationVM.rawPosition;
     if (rawPos == null) return;
 
-    final snapped =
-    await _osrmService.snapUserToRoad(rawPos);
-
-    final userPos = snapped ?? rawPos;
-
+    final snapped = await _osrmService.snapUserToRoad(rawPos);
     if (snapped != null) {
       locationVM.setSnappedPosition(snapped);
+      _lastSnapTime = DateTime.now();
     }
-
-    _lastSnapTime = DateTime.now();
-
-    if (navVM.isNavigating) {
-      routeVM.updateNavigationData(userPos);
-    }
-
-    controller!.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: userPos,
-          zoom: 18,
-          tilt: 60,
-          bearing: locationVM.heading,
-        ),
-      ),
-    );
-
-    await handleMapUpdate();
   }
 }

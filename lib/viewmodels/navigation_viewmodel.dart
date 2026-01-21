@@ -1,13 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
+
 import '../data/models/route_point.dart';
+import '../data/services/osrm_service.dart';
 
 class NavigationViewModel extends ChangeNotifier {
-  RoutePoint? _pendingPoint;
+  /// ===============================
+  /// NAVIGATION STATE
+  /// ===============================
   bool _isNavigating = false;
-
-  RoutePoint? get pendingPoint => _pendingPoint;
   bool get isNavigating => _isNavigating;
 
+  RoutePoint? _pendingPoint;
+  RoutePoint? get pendingPoint => _pendingPoint;
+
+  /// ===============================
+  /// NAVIGATION INFO (UI)
+  /// ===============================
+  String currentInstruction = "Đang xác định hướng...";
+  String remainingTime = "0 phút";
+  String remainingDistance = "0 km";
+
+  /// ===============================
+  /// REROUTE COOLDOWN
+  /// ===============================
+  DateTime _lastRecalc = DateTime.fromMillisecondsSinceEpoch(0);
+
+  bool get canRecalculate =>
+      DateTime.now().difference(_lastRecalc).inSeconds >= 15;
+
+  void markRecalculated() {
+    _lastRecalc = DateTime.now();
+  }
+
+  /// ===============================
+  /// NAVIGATION CONTROL
+  /// ===============================
+  void toggleNavigation() {
+    _isNavigating = !_isNavigating;
+    notifyListeners();
+  }
+
+  /// ===============================
+  /// ARRIVAL STATE
+  /// ===============================
   void setPendingPoint(RoutePoint point) {
     if (_pendingPoint?.id == point.id) return;
     _pendingPoint = point;
@@ -19,8 +55,24 @@ class NavigationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleNavigation() {
-    _isNavigating = !_isNavigating;
-    notifyListeners();
+  /// ===============================
+  /// UPDATE NAVIGATION INSTRUCTION
+  /// ===============================
+  Future<void> updateNavigationData(
+      LatLng currentPos,
+      RoutePoint destination,
+      ) async {
+    final data = await OsrmService.navigationInfo(
+      currentPos.latitude,
+      currentPos.longitude,
+      destination,
+    );
+
+    if (data.isNotEmpty) {
+      currentInstruction = data['instruction'] ?? "Đi thẳng";
+      remainingTime = data['time'] ?? "0 phút";
+      remainingDistance = data['distance'] ?? "0 km";
+      notifyListeners();
+    }
   }
 }

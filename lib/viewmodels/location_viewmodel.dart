@@ -22,8 +22,8 @@ class LocationViewModel extends ChangeNotifier {
   /// PUBLIC API (GIỮ NGUYÊN)
   /// ===============================
 
-  LatLng? get currentPosition =>
-      _snappedPosition ?? _rawPosition;
+  LatLng get currentPosition =>
+      _rawPosition!;
 
   double get heading => _heading;
 

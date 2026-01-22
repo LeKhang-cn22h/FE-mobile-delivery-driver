@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:test_f/viewmodels/auth_viewmodel.dart';
+import 'package:test_f/viewmodels/profile_viewmodel.dart';
 
 import 'firebase_options.dart';
 import 'app.dart';
@@ -32,6 +34,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LocationViewModel()..initLocation()),
         ChangeNotifierProvider(create: (_) => RouteViewModel()),
         ChangeNotifierProvider(create: (_) => NavigationViewModel()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => ProfileViewModel()),
+
         ...OrderInjection.getProviders(),
       ],
       child: const MyApp(),

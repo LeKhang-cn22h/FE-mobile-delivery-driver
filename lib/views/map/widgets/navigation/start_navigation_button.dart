@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../../viewmodels/navigation_viewmodel.dart';
 
 class StartNavigationButton extends StatelessWidget {
-  const StartNavigationButton({super.key});
+  final VoidCallback onStart;
+
+  const StartNavigationButton({
+    super.key,
+    required this.onStart,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -17,14 +20,19 @@ class StartNavigationButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
             elevation: 8,
           ),
-          onPressed: () => context.read<NavigationViewModel>().toggleNavigation(),
+          onPressed: onStart,
           icon: const Icon(Icons.navigation),
           label: const Text(
             "BẮT ĐẦU ĐI",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
         ),
       ),

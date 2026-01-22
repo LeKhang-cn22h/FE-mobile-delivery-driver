@@ -4,34 +4,71 @@ import 'package:geolocator/geolocator.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 class LocationViewModel extends ChangeNotifier {
-  LatLng? _currentPosition;
+  /// ===============================
+  /// INTERNAL STATE
+  /// ===============================
+
+  LatLng? _rawPosition;
+  LatLng? _snappedPosition;
+
+  LatLng? get rawPosition => _rawPosition;
+  LatLng? get snappedPosition => _snappedPosition;
+
+
   double _heading = 0;
   StreamSubscription<Position>? _sub;
 
-  LatLng? get currentPosition => _currentPosition;
+  /// ===============================
+  /// PUBLIC API (GIỮ NGUYÊN)
+  /// ===============================
+
+  LatLng get currentPosition =>
+      _rawPosition!;
+
   double get heading => _heading;
 
+  bool get isSnapped => _snappedPosition != null;
+
+  /// ===============================
+  /// LOCATION STREAM
+  /// ===============================
   Future<void> initLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final serviceEnabled =
+    await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) return;
 
-    LocationPermission permission = await Geolocator.checkPermission();
+    var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
     if (permission == LocationPermission.deniedForever) return;
 
-    // Cấu hình tối ưu cho Navigation: Accuracy Best và DistanceFilter nhỏ
     _sub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 1, // Cập nhật mỗi 1 mét để xoay mượt
+        distanceFilter: 1,
       ),
     ).listen((pos) {
-      _currentPosition = LatLng(pos.latitude, pos.longitude);
-      _heading = pos.heading; // Lấy hướng thực tế từ GPS
+      _rawPosition = LatLng(pos.latitude, pos.longitude);
+      _heading = pos.heading;
+
+      // Luôn thông báo để bản đồ vẽ lại vị trí mới
       notifyListeners();
     });
+  }
+
+  /// ===============================
+  /// SNAP CONTROL
+  /// ===============================
+
+  void setSnappedPosition(LatLng position) {
+    _snappedPosition = position;
+    notifyListeners();
+  }
+
+  void clearSnap() {
+    _snappedPosition = null;
+    notifyListeners();
   }
 
   @override
@@ -39,4 +76,5 @@ class LocationViewModel extends ChangeNotifier {
     _sub?.cancel();
     super.dispose();
   }
+
 }

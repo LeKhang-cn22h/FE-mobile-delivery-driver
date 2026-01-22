@@ -2,63 +2,112 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import '../data/models/route_point.dart';
 
 class MapUtils {
-  /// 1. Vẽ hoặc cập nhật tuyến đường (Line)
-  /// Trả về đối tượng Line để có thể xóa hoặc cập nhật ở frame sau
+  /// ===============================
+  /// USER MARKER STATE (ONLY THIS)
+  /// ===============================
+  static Symbol? _userSymbol;
+
+  /// ===============================
+  /// 1. DRAW / UPDATE ROUTE LINE
+  /// (GIỮ LOGIC CŨ)
+  /// ===============================
   static Future<Line?> drawRoute(
       MapLibreMapController controller,
       List<LatLng> points, {
         Line? oldLine,
       }) async {
-    // Xóa đường cũ trước khi vẽ đường mới
     if (oldLine != null) {
       try {
         await controller.removeLine(oldLine);
-      } catch (e) {
-        // Tránh crash nếu line đã bị xóa trước đó
-      }
+      } catch (_) {}
     }
 
     if (points.isEmpty) return null;
 
-    return await controller.addLine(
+    return controller.addLine(
       LineOptions(
         geometry: points,
-        lineColor: "#1E90FF", // Màu xanh dương (DodgerBlue)
-        lineWidth: 5.0,
-        lineOpacity: 0.8,
-        lineJoin: "round", // Làm mượt các góc cua
+        lineColor: "#1E90FF",
+        lineWidth: 5,
+        lineOpacity: 0.85,
+        lineJoin: "round",
       ),
     );
   }
 
-  /// 2. Vẽ các Marker (điểm dừng) dưới dạng Circle
-  /// Lưu ý: Sử dụng Circles để tối ưu hiệu năng hơn là Symbols khi số lượng điểm lớn
+  /// ===============================
+  /// 2. DRAW STOP MARKERS
+  /// ===============================
   static Future<void> drawMarkers(
       MapLibreMapController controller,
       List<RoutePoint> points,
       ) async {
-    // Xóa toàn bộ các marker cũ
     await controller.clearCircles();
 
-    if (points.isEmpty) return;
-
-    for (var p in points) {
+    for (final p in points) {
       await controller.addCircle(
         CircleOptions(
           geometry: LatLng(p.lat, p.lng),
-          circleColor: "#FF0000", // Màu đỏ cho điểm dừng
-          circleRadius: 8.0,
-          circleStrokeWidth: 2.0,
-          circleStrokeColor: "#FFFFFF", // Viền trắng cho dễ nhìn
+          circleColor: "#FF3B30",
+          circleRadius: 8,
+          circleStrokeWidth: 2,
+          circleStrokeColor: "#FFFFFF",
         ),
       );
     }
   }
 
-  /// 3. Clear toàn bộ bản đồ khi cần thiết
-  static Future<void> clearMap(MapLibreMapController controller) async {
+  /// ===============================
+  /// 3. USER MARKER (SNAP TARGET)
+  /// ===============================
+  static Future<void> drawOrUpdateUserMarker(
+      MapLibreMapController controller,
+      LatLng position,
+      double heading,
+      ) async {
+    if (_userSymbol == null) {
+      _userSymbol = await controller.addSymbol(
+        SymbolOptions(
+          geometry: position,
+          iconImage: "user_marker",
+          iconSize: 1.2,
+          iconRotate: heading,
+          iconAnchor: "center",
+        ),
+      );
+    } else {
+      await controller.updateSymbol(
+        _userSymbol!,
+        SymbolOptions(
+          geometry: position,
+          iconRotate: heading,
+        ),
+      );
+    }
+  }
+
+  /// ===============================
+  /// 4. CLEAR USER MARKER
+  /// ===============================
+  static Future<void> clearUserMarker(
+      MapLibreMapController controller,
+      ) async {
+    if (_userSymbol != null) {
+      try {
+        await controller.removeSymbol(_userSymbol!);
+      } catch (_) {}
+      _userSymbol = null;
+    }
+  }
+
+  /// ===============================
+  /// 5. CLEAR MAP (KHÔNG PHÁ LOGIC)
+  /// ===============================
+  static Future<void> clearMap(
+      MapLibreMapController controller,
+      ) async {
+    await clearUserMarker(controller);
     await controller.clearLines();
     await controller.clearCircles();
-    await controller.clearSymbols();
   }
 }

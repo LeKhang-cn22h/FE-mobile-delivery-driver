@@ -22,20 +22,26 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> with MapLogicMixin {
+class _MapScreenState extends State<MapScreen>
+    with MapLogicMixin<MapScreen> {
+
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LocationViewModel>().addListener(handleMapUpdate);
-      context.read<RouteViewModel>().addListener(handleMapUpdate);
-      context.read<NavigationViewModel>().addListener(handleMapUpdate);
+      final locationVM = context.read<LocationViewModel>();
+      final routeVM = context.read<RouteViewModel>();
+      final navVM = context.read<NavigationViewModel>();
+
+      locationVM.addListener(handleMapUpdate);
+      routeVM.addListener(handleMapUpdate);
+      navVM.addListener(handleMapUpdate);
     });
   }
 
   @override
   void dispose() {
-    // Đảm bảo gỡ listener để tránh memory leak
     context.read<LocationViewModel>().removeListener(handleMapUpdate);
     context.read<RouteViewModel>().removeListener(handleMapUpdate);
     context.read<NavigationViewModel>().removeListener(handleMapUpdate);
@@ -50,34 +56,55 @@ class _MapScreenState extends State<MapScreen> with MapLogicMixin {
     return Scaffold(
       body: Stack(
         children: [
-          MapViewWidget(onMapCreated: (c) => controller = c),
+          /// ================= MAP =================
+          MapViewWidget(
+            onMapCreated: (MapLibreMapController c) {
+              controller = c;
+            },
+          ),
 
+          /// ================= NAVIGATION MODE =================
           if (navVM.isNavigating) ...[
-            NavInstructionPanel(instruction: routeVM.currentInstruction),
+            NavInstructionPanel(
+              instruction: navVM.currentInstruction,
+            ),
             NavBottomInfo(
-              time: routeVM.remainingTime,
-              distance: routeVM.remainingDistance,
+              time: navVM.remainingTime,
+              distance: navVM.remainingDistance,
               onStop: () {
                 controller?.updateContentInsets(EdgeInsets.zero);
                 controller?.animateCamera(CameraUpdate.tiltTo(0));
                 navVM.toggleNavigation();
               },
             ),
-          ] else ...[
+          ]
+
+          /// ================= NORMAL MODE =================
+          else ...[
             const CheckRouteButton(),
             _buildSideListButton(),
             _buildOrdersListButton(),
             LocationButton(onPressed: moveToUser),
-            const StartNavigationButton(),
+
+            StartNavigationButton(
+              onStart: () async {
+                final navVM = context.read<NavigationViewModel>();
+
+                navVM.toggleNavigation(); // bật trước
+                await onStartNavigation(); // snap + camera
+              },
+            ),
           ],
         ],
       ),
     );
   }
 
+  /// ================= BUTTONS =================
+
   Widget _buildOrdersListButton() {
     return Positioned(
-      bottom: 160,  // Phía trên button route list
+      bottom: 160,
       right: 16,
       child: FloatingActionButton(
         mini: true,

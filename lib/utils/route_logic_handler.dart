@@ -90,6 +90,66 @@ class RouteLogicHandler {
     });
     return sorted;
   }
+
+  /// 5. Kiểm tra user có ở GẦN route không (dùng cho SNAP)
+  /// Đo khoảng cách từ user tới từng ĐOẠN route
+  static bool isNearRoute(
+      LatLng userPos,
+      List<LatLng> route, {
+        double thresholdMeters = 25.0,
+      }) {
+    if (route.length < 2) return false;
+
+    for (int i = 0; i < route.length - 1; i++) {
+      final a = route[i];
+      final b = route[i + 1];
+
+      final distance = _distancePointToSegment(
+        userPos,
+        a,
+        b,
+      );
+
+      if (distance <= thresholdMeters) {
+        return true;
+      }
+    }
+    return false;
+  }
+  /// Khoảng cách từ điểm P tới đoạn AB (đơn vị: mét)
+  static double _distancePointToSegment(
+      LatLng p,
+      LatLng a,
+      LatLng b,
+      ) {
+    // Chuyển lat/lng sang hệ phẳng x/y (đủ chính xác ở scale nhỏ)
+    final ax = a.longitude;
+    final ay = a.latitude;
+    final bx = b.longitude;
+    final by = b.latitude;
+    final px = p.longitude;
+    final py = p.latitude;
+
+    final dx = bx - ax;
+    final dy = by - ay;
+
+    if (dx == 0 && dy == 0) {
+      return GeoUtils.haversine(py, px, ay, ax);
+    }
+
+    final t = ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy);
+    final clampedT = t.clamp(0.0, 1.0);
+
+    final projX = ax + clampedT * dx;
+    final projY = ay + clampedT * dy;
+
+    return GeoUtils.haversine(
+      py,
+      px,
+      projY,
+      projX,
+    );
+  }
 }
 
 //check bò lạc :)))

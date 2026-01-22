@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart';
 import '../models/route_point.dart';
@@ -34,33 +35,7 @@ class OsrmService {
         .toList();
   }
 
-  static Future<List<LatLng>> route(
-      double fromLat,
-      double fromLng,
-      List<RoutePoint> points,
-      ) async {
-    final coords = [
-      "$fromLng,$fromLat",
-      ...points.map((p) => "${p.lng},${p.lat}")
-    ].join(";");
 
-    final url = Uri.parse(
-      "$_base/route/v1/driving/$coords"
-          "?overview=full&geometries=geojson",
-    );
-
-    final res = await http.get(url);
-    final json = jsonDecode(res.body);
-
-    final List<dynamic> coordinates =
-    json['routes'][0]['geometry']['coordinates'];
-
-    return coordinates.map<LatLng>((c) {
-      final lon = (c[0] as num).toDouble();
-      final lat = (c[1] as num).toDouble();
-      return LatLng(lat, lon);
-    }).toList();
-  }
 
   static Future<Map<String, dynamic>> navigationInfo(
       double fromLat,
@@ -96,4 +71,62 @@ class OsrmService {
       "distance": "${(route['distance'] / 1000).toStringAsFixed(1)} km",
     };
   }
+  Future<LatLng?> snapUserToRoad(LatLng user) async {
+    try {
+      final url = Uri.parse(
+          'https://router.project-osrm.org/nearest/v1/driving/${user.longitude},${user.latitude}?number=1');
+
+      final res = await http.get(url);
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['waypoints'] != null && data['waypoints'].isNotEmpty) {
+          final List coords = data['waypoints'][0]['location'];
+          return LatLng(coords[1], coords[0]); // OSRM trả về [lng, lat]
+        }
+      }
+    } catch (e) {
+      debugPrint("Lỗi Snap: $e");
+    }
+    return null;
+  }
+  static Future<RouteResult> routeWithInfo(
+      double startLat,
+      double startLng,
+      List<RoutePoint> points,
+      ) async {
+    final coords = [
+      "$startLng,$startLat",
+      ...points.map((p) => "${p.lng},${p.lat}")
+    ].join(';');
+
+    final url = Uri.parse(
+      "$_base/route/v1/driving/$coords?overview=full&geometries=geojson",
+    );
+
+    final res = await http.get(url);
+    final data = jsonDecode(res.body);
+    final route = data['routes'][0];
+
+    final geometry = (route['geometry']['coordinates'] as List)
+        .map((c) => LatLng(c[1], c[0]))
+        .toList();
+
+    return RouteResult(
+      geometry: geometry,
+      distanceMeters: (route['distance'] as num).toDouble(),
+      durationSeconds: (route['duration'] as num).toDouble(),
+    );
+  }
+}
+
+class RouteResult {
+  final List<LatLng> geometry;
+  final double distanceMeters;
+  final double durationSeconds;
+
+  RouteResult({
+    required this.geometry,
+    required this.distanceMeters,
+    required this.durationSeconds,
+  });
 }

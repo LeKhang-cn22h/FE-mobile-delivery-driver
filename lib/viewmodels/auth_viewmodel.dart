@@ -1,38 +1,46 @@
 import 'package:flutter/foundation.dart';
+
 import '../data/models/user_model.dart';
-import '../data/repositories/auth_repository.dart';
+import '../data/services/auth_service.dart';
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
+/// Trạng thái authentication
+enum AuthState {
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  error,
+}
+
+/// AuthViewModel - Quản lý state cho Login/Register
 class AuthViewModel extends ChangeNotifier {
-  final AuthRepository _repository;
+  final AuthService _authService;
 
-  AuthViewModel(this._repository);
+  AuthViewModel({AuthService? authService})
+      : _authService = authService ?? AuthService();
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // STATE
-  // ══════════════════════════════════════════════════════════════════════════
-  AuthStatus _status = AuthStatus.initial;
+  // ===== STATE =====
+  AuthState _state = AuthState.initial;
   UserModel? _user;
   String? _errorMessage;
-  bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
+  bool _isPasswordVisible = false;       // THÊM
+  bool _isConfirmPasswordVisible = false; // THÊM
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // GETTERS
-  // ══════════════════════════════════════════════════════════════════════════
-  AuthStatus get status => _status;
+  // ===== GETTERS =====
+  AuthState get state => _state;
   UserModel? get user => _user;
   String? get errorMessage => _errorMessage;
   bool get isPasswordVisible => _isPasswordVisible;
   bool get isConfirmPasswordVisible => _isConfirmPasswordVisible;
-  bool get isLoading => _status == AuthStatus.loading;
-  bool get isAuthenticated => _status == AuthStatus.authenticated;
-  bool get hasError => _errorMessage != null;
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // ACTIONS
-  // ══════════════════════════════════════════════════════════════════════════
+  bool get isLoading => _state == AuthState.loading;
+  bool get isAuthenticated => _state == AuthState.authenticated;
+  bool get hasError => _errorMessage != null && _errorMessage!.isNotEmpty;
+
+  // ==========================================
+  // TOGGLE PASSWORD VISIBILITY
+  // ==========================================
 
   void togglePasswordVisibility() {
     _isPasswordVisible = !_isPasswordVisible;
@@ -44,71 +52,147 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clearError() {
-    _errorMessage = null;
-    _status = AuthStatus.initial;
-    notifyListeners();
-  }
+  // ==========================================
+  // KIỂM TRA TRẠNG THÁI BAN ĐẦU
+  // ==========================================
 
-  void resetPasswordVisibility() {
-    _isPasswordVisible = false;
-    _isConfirmPasswordVisible = false;
-  }
-
-  Future<bool> login(String email, String password) async {
-    _status = AuthStatus.loading;
-    _errorMessage = null;
+  Future<void> checkAuthStatus() async {
+    _state = AuthState.loading;
     notifyListeners();
 
-    try {
-      _user = await _repository.login(email, password);
-      _status = AuthStatus.authenticated;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _status = AuthStatus.error;
-      _errorMessage = e.toString().replaceAll('Exception: ', '');
-      notifyListeners();
-      return false;
+    final isLoggedIn = await _authService.isLoggedIn();
+
+    if (isLoggedIn) {
+      _state = AuthState.authenticated;
+    } else {
+      _state = AuthState.unauthenticated;
     }
+
+    notifyListeners();
   }
 
-  Future<bool> register({
-    required String fullName,
-    required String email,
-    required String password,
-    String? phone,
-  }) async {
-    _status = AuthStatus.loading;
+  // ==========================================
+  // ĐĂNG NHẬP
+  // ==========================================
+
+  /// Đăng nhập - nhận 2 params riêng biệt
+  Future<bool> login(String email, String password) async {
+    _state = AuthState.loading;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _user = await _repository.register(
-        fullName: fullName,
+      final response = await _authService.login(
         email: email,
         password: password,
-        phone: phone,
       );
-      _status = AuthStatus.authenticated;
+
+      _user = response.user;
+      _state = AuthState.authenticated;
       notifyListeners();
       return true;
     } catch (e) {
-      _status = AuthStatus.error;
+      _state = AuthState.unauthenticated;
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
       return false;
     }
   }
 
-  Future<void> logout() async {
-    _status = AuthStatus.loading;
+  // ==========================================
+  // ĐĂNG KÝ
+  // ==========================================
+
+  /// Đăng ký
+  Future<bool> register({
+    required String email,
+    required String password,
+    required String confirmPassword,
+    required String fullName,
+    String? phone,
+  }) async {
+    _state = AuthState.loading;
+    _errorMessage = null;
     notifyListeners();
 
-    await _repository.logout();
+    try {
+      final response = await _authService.register(
+        email: email,
+        password: password,
+        confirmPassword: confirmPassword,
+        fullName: fullName,
+        phone: phone,
+      );
+
+      _user = response.user;
+      _state = AuthState.authenticated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _state = AuthState.unauthenticated;
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ==========================================
+  // ĐĂNG XUẤT
+  // ==========================================
+
+  Future<void> logout() async {
+    _state = AuthState.loading;
+    notifyListeners();
+
+    await _authService.logout();
 
     _user = null;
-    _status = AuthStatus.unauthenticated;
+    _state = AuthState.unauthenticated;
+    _isPasswordVisible = false;
+    _isConfirmPasswordVisible = false;
+    notifyListeners();
+  }
+
+  // ==========================================
+  // QUÊN MẬT KHẨU
+  // ==========================================
+
+  Future<bool> resetPassword(String email) async {
+    _state = AuthState.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authService.resetPassword(email);
+      _state = AuthState.unauthenticated;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _state = AuthState.unauthenticated;
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ==========================================
+  // HELPERS
+  // ==========================================
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void setError(String message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
+
+  void reset() {
+    _state = AuthState.initial;
+    _user = null;
+    _errorMessage = null;
     _isPasswordVisible = false;
     _isConfirmPasswordVisible = false;
     notifyListeners();

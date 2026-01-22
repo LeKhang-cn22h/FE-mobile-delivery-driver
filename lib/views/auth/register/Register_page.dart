@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:test_f/routes/route_paths.dart';
+import 'package:test_f/viewmodels/auth_viewmodel.dart';
 import 'package:test_f/views/auth/login/widgets/login_button.dart';
 import 'package:test_f/views/auth/login/widgets/login_header.dart';
+import 'package:test_f/views/auth/login/widgets/error_banner.dart';
 import '../login/widgets/auth_link_text.dart';
 import 'widgets/simple_field.dart';
 
@@ -22,44 +26,13 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // State
-  bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
-  bool _isLoading = false;
-
-  void _togglePasswordVisibility() {
-    setState(() {
-      _isPasswordVisible = !_isPasswordVisible;
+  @override
+  void initState() {
+    super.initState();
+    // Clear error khi vào trang
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthViewModel>().clearError();
     });
-  }
-
-  void _toggleConfirmPasswordVisibility() {
-    setState(() {
-      _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-    });
-  }
-
-  Future<void> _onRegisterPressed() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    // TODO: Gọi API register
-    await Future.delayed(const Duration(seconds: 2));
-
-    setState(() => _isLoading = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đăng ký thành công!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      context.go('/home');
-    }
   }
 
   @override
@@ -70,6 +43,49 @@ class _RegisterPageState extends State<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  /// Xử lý đăng ký
+  /// Xử lý đăng ký
+  Future<void> _onRegisterPressed() async {
+    // Validate form
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Ẩn keyboard
+    FocusScope.of(context).unfocus();
+
+    // Gọi ViewModel
+    final viewModel = context.read<AuthViewModel>();
+    final success = await viewModel.register(
+      fullName: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim().isNotEmpty
+          ? _phoneController.text.trim()
+          : null,
+      password: _passwordController.text,
+      confirmPassword: _confirmPasswordController.text,
+    );
+
+    // Xử lý kết quả
+    if (success && mounted) {
+      _showSuccessAndNavigate();
+    }
+  }
+
+  /// Hiển thị thông báo thành công và chuyển về trang LOGIN
+  void _showSuccessAndNavigate() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đăng ký thành công! Vui lòng đăng nhập.'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    context.go(RoutePaths.login);
   }
 
   @override
@@ -91,10 +107,15 @@ class _RegisterPageState extends State<RegisterPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header
-                  LoginHeader(),
+                  // === HEADER ===
+                  const LoginHeader(),
 
-                  // NAME FIELD
+                  const SizedBox(height: 24),
+
+                  // === ERROR BANNER ===
+                  _buildErrorBanner(),
+
+                  // === NAME FIELD ===
                   SimpleField(
                     controller: _nameController,
                     type: FieldType.name,
@@ -102,7 +123,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   const SizedBox(height: 16),
 
-                  // EMAIL FIELD
+                  // === EMAIL FIELD ===
                   SimpleField(
                     controller: _emailController,
                     type: FieldType.email,
@@ -110,7 +131,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   const SizedBox(height: 16),
 
-                  // PHONE FIELD (Optional)
+                  // === PHONE FIELD (Optional) ===
                   SimpleField(
                     controller: _phoneController,
                     type: FieldType.phone,
@@ -119,48 +140,96 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   const SizedBox(height: 16),
 
-                  // PASSWORD FIELD
-                  SimpleField(
-                    controller: _passwordController,
-                    type: FieldType.password,
-                    isPasswordVisible: _isPasswordVisible,
-                    onTogglePassword: _togglePasswordVisibility,
-                  ),
+                  // === PASSWORD FIELD ===
+                  _buildPasswordField(),
 
                   const SizedBox(height: 16),
 
-                  // CONFIRM PASSWORD FIELD
-                  SimpleField(
-                    controller: _confirmPasswordController,
-                    type: FieldType.confirmPassword,
-                    isPasswordVisible: _isConfirmPasswordVisible,
-                    onTogglePassword: _toggleConfirmPasswordVisibility,
-                    passwordController: _passwordController,
-                  ),
+                  // === CONFIRM PASSWORD FIELD ===
+                  _buildConfirmPasswordField(),
 
                   const SizedBox(height: 32),
 
-                  // REGISTER BUTTON - ĐÃ SỬA
-                  LoginButton(
-                    onPressed: _onRegisterPressed,
-                    text: 'Đăng ký',
-                    isLoading: _isLoading,
-                  ),
+                  // === REGISTER BUTTON ===
+                  _buildRegisterButton(),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 16),
 
-                  // LOGIN LINK
+                  // === LOGIN LINK ===
                   AuthLinkText(
                     onPressed: () => context.go('/login'),
                     normalText: 'Đã có tài khoản?',
                     linkText: 'Đăng nhập',
                   ),
+
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// Error Banner - lắng nghe từ ViewModel
+  Widget _buildErrorBanner() {
+    return Consumer<AuthViewModel>(
+      builder: (context, viewModel, child) {
+        if (!viewModel.hasError) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: ErrorBanner(
+            message: viewModel.errorMessage ?? '',
+            onDismiss: () => viewModel.clearError(),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Password Field - lắng nghe visibility từ ViewModel
+  Widget _buildPasswordField() {
+    return Consumer<AuthViewModel>(
+      builder: (context, viewModel, child) {
+        return SimpleField(
+          controller: _passwordController,
+          type: FieldType.password,
+          isPasswordVisible: viewModel.isPasswordVisible,
+          onTogglePassword: () => viewModel.togglePasswordVisibility(),
+        );
+      },
+    );
+  }
+
+  /// Confirm Password Field - lắng nghe visibility từ ViewModel
+  Widget _buildConfirmPasswordField() {
+    return Consumer<AuthViewModel>(
+      builder: (context, viewModel, child) {
+        return SimpleField(
+          controller: _confirmPasswordController,
+          type: FieldType.confirmPassword,
+          isPasswordVisible: viewModel.isConfirmPasswordVisible,
+          onTogglePassword: () => viewModel.toggleConfirmPasswordVisibility(),
+          passwordController: _passwordController,
+        );
+      },
+    );
+  }
+
+  /// Register Button - lắng nghe loading từ ViewModel
+  Widget _buildRegisterButton() {
+    return Consumer<AuthViewModel>(
+      builder: (context, viewModel, child) {
+        return LoginButton(
+          onPressed: viewModel.isLoading ? null : _onRegisterPressed,
+          text: 'Đăng ký',
+          isLoading: viewModel.isLoading,
+        );
+      },
     );
   }
 }

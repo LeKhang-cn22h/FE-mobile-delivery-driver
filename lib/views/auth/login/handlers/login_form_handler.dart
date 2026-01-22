@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../viewmodels/auth_viewmodel.dart';
 
+/// LoginFormHandler - Xử lý form logic cho LoginPage
 class LoginFormHandler {
-  final AuthViewModel viewModel;
+  final BuildContext context;
   final GlobalKey<FormState> formKey;
   final TextEditingController emailController;
   final TextEditingController passwordController;
 
   LoginFormHandler({
-    required this.viewModel,
+    required this.context,
     required this.formKey,
     required this.emailController,
     required this.passwordController,
   });
 
+  /// Lấy ViewModel từ context
+  AuthViewModel get _viewModel => context.read<AuthViewModel>();
+
+  /// Validate email
   String? validateEmail(String? value) {
     if (value == null || value.isEmpty) {
       return 'Vui lòng nhập email';
@@ -24,6 +30,7 @@ class LoginFormHandler {
     return null;
   }
 
+  /// Validate password
   String? validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Vui lòng nhập mật khẩu';
@@ -34,24 +41,34 @@ class LoginFormHandler {
     return null;
   }
 
+  /// Submit form - gọi ViewModel login
   Future<bool> submit() async {
+    // Validate form trước
     if (!formKey.currentState!.validate()) {
       return false;
     }
-    return await viewModel.login(
+
+    // Ẩn keyboard
+    FocusScope.of(context).unfocus();
+
+    // Gọi ViewModel
+    return await _viewModel.login(
       emailController.text.trim(),
       passwordController.text,
     );
   }
 
-  void togglePassword() {
-    viewModel.togglePasswordVisibility();
+  /// Toggle password visibility
+  void togglePasswordVisibility() {
+    _viewModel.togglePasswordVisibility();
   }
 
+  /// Clear error message
   void clearError() {
-    viewModel.clearError();
+    _viewModel.clearError();
   }
 
+  /// Dispose controllers
   void dispose() {
     emailController.dispose();
     passwordController.dispose();

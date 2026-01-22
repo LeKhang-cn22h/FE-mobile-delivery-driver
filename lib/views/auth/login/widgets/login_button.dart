@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:test_f/core/theme/button_styles.dart';
 
+/// LoginButton Widget
 class LoginButton extends StatelessWidget {
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String text;
   final bool isLoading;
 
@@ -17,20 +17,34 @@ class LoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 52,
-      child: TextButton(
-        style: AppButtonStyles.roundedButtonBold,
-        onPressed: isLoading ? null : onPressed, // Disable khi loading
+      height: 50,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: Colors.orange.withOpacity(0.6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+        ),
         child: isLoading
             ? const SizedBox(
-          width: 24,
-          height: 24,
+          height: 20,
+          width: 20,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Colors.white,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
           ),
         )
-            : Text(text),
+            : Text(
+          text,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

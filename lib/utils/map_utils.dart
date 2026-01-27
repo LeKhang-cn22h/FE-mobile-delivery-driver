@@ -42,6 +42,7 @@ class MapUtils {
       MapLibreMapController controller,
       List<RoutePoint> points,
       ) async {
+    if (points.isEmpty) return;
     await controller.clearCircles();
 
     for (final p in points) {

@@ -1,6 +1,3 @@
-import 'package:flutter/material.dart';
+import 'globals/auth_notifier.dart';
 
-class AppGlobals {
-  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
-  GlobalKey<ScaffoldMessengerState>();
-}
+final authNotifier = AuthNotifier();

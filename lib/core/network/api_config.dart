@@ -5,7 +5,7 @@ class ApiConfig {
   factory ApiConfig() => _instance;
   ApiConfig._internal();
 
-  static const String _realDeviceUrl = 'http://192.168.1.161:8000';
+  static const String _realDeviceUrl = 'http://192.168.1.171:8000';
 
   static const String baseUrl= _realDeviceUrl;
 

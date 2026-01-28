@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:test_f/core/globals.dart';
 
+import '../services/navigation_service.dart';
 import 'api_config.dart';
 import 'api_endpoints.dart';
 import '../storage/auth_storage.dart';
@@ -267,7 +269,12 @@ class ApiService {
     // Extract error message nếu failed
     if (!isSuccess) {
       message = _extractErrorMessage(data, statusCode);
+
+      if (statusCode == 401) {
+        _handleUnauthorized();
+      }
     }
+
 
     return ApiResponse(
       success: isSuccess,
@@ -329,4 +336,9 @@ class ApiService {
       print('[ApiService] $message');
     }
   }
+
+  void _handleUnauthorized() async{
+    await _authStorage.clearAll();
+    authNotifier.notifyAuthChanged();
+      }
 }

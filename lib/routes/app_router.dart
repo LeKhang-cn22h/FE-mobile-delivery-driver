@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:test_f/core/globals.dart';
 import 'package:test_f/routes/shell_route.dart';
 import 'package:test_f/core/storage/auth_storage.dart';
 import '../views/auth/login/login_page.dart';
@@ -8,6 +9,7 @@ import 'route_paths.dart';
 import 'route_names.dart';
 
 final router = GoRouter(
+  refreshListenable: authNotifier,
   initialLocation: RoutePaths.home, // Đổi thành home, redirect sẽ xử lý
 
   // ===== REDIRECT LOGIC =====

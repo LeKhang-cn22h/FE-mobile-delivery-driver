@@ -72,9 +72,16 @@ class _MapScreenState extends State<MapScreen>
               time: navVM.remainingTime,
               distance: navVM.remainingDistance,
               onStop: () {
-                controller?.updateContentInsets(EdgeInsets.zero);
-                controller?.animateCamera(CameraUpdate.tiltTo(0));
+                final pos = context.read<LocationViewModel>().currentPosition;
+
+                // 1️⃣ Tắt navigation
                 navVM.toggleNavigation();
+
+                // 2️⃣ Reset camera về default + tắt auto follow
+                if (pos != null) {
+                  isCameraFollowingUser = false; // QUAN TRỌNG
+                  resetCameraToDefault(pos);
+                }
               },
             ),
           ]

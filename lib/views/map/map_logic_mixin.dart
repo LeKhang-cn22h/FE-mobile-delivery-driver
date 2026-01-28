@@ -18,6 +18,10 @@ mixin MapLogicMixin<T extends StatefulWidget> on State<T> {
   MapLibreMapController? controller;
   Line? routeLine;
 
+  bool _isInsetApplied = false;
+  bool isCameraFollowingUser = false;
+
+
 
   bool movedOnce = false;
   bool isDialogShowing = false;
@@ -65,32 +69,70 @@ mixin MapLogicMixin<T extends StatefulWidget> on State<T> {
       LocationViewModel locationVM,
       NavigationViewModel navVM,
       ) {
-    if (!navVM.isNavigating) {
-      if (!movedOnce) {
-        movedOnce = true;
-        moveToUser();
-      }
-      return;
-    }
-
-    controller!.updateContentInsets(
-      const EdgeInsets.only(bottom: 220),
-    );
     final map = controller;
     if (map == null) return;
 
+    // 🚨 NAV MODE → BẮT BUỘC FOLLOW
+    if (navVM.isNavigating) {
+      isCameraFollowingUser = true;
+    }
 
-    controller!.animateCamera(
+    // ❌ Không follow → không đụng camera
+    if (!isCameraFollowingUser) return;
+
+    if (navVM.isNavigating) {
+      // Apply inset MỘT LẦN
+      if (!_isInsetApplied) {
+        controller!.updateContentInsets(
+          const EdgeInsets.only(bottom: 220),
+        );
+        _isInsetApplied = true;
+      }
+
+      controller!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: userPos,
+            zoom: 18,
+            tilt: 60,
+            bearing: locationVM.heading,
+          ),
+        ),
+      );
+    } else {
+      // NORMAL MODE (focus user do bấm nút)
+      if (_isInsetApplied) {
+        controller!.updateContentInsets(EdgeInsets.zero);
+        _isInsetApplied = false;
+      }
+
+      controller!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          userPos,
+          16,
+        ),
+      );
+    }
+  }
+  void resetCameraToDefault(LatLng userPos) {
+    // 🔄 Thoát nav → KHÔNG FOLLOW
+    isCameraFollowingUser = false;
+    _isInsetApplied = false;
+
+    controller?.updateContentInsets(EdgeInsets.zero);
+
+    controller?.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
           target: userPos,
-          zoom: 18,
-          tilt: 60,
-          bearing: locationVM.heading,
+          zoom: 16,
+          bearing: 0,
+          tilt: 0,
         ),
       ),
     );
   }
+
   Future<void> _handleRouteLogic(
       LatLng userPos,
       RouteViewModel routeVM,

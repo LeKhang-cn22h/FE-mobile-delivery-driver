@@ -51,6 +51,7 @@ class RouteViewModel extends ChangeNotifier {
       totalDistanceKm = result.distanceMeters / 1000;
       totalDistanceText = "${totalDistanceKm.toStringAsFixed(1)} km";
 
+      _shouldRedrawMarkers = true;
     } catch (e) {
       debugPrint("Lỗi khi tính toán lộ trình: $e");
     } finally {

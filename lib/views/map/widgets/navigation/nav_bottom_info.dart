@@ -78,6 +78,7 @@ class NavBottomInfo extends StatelessWidget {
                     ),
                     Text(
                       "$totalDistanceText",
+
                       style: const TextStyle(
                         color: Colors.black54,
                         fontSize: 16,

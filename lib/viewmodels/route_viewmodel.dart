@@ -37,7 +37,7 @@ class RouteViewModel extends ChangeNotifier {
       // Nạp điểm dừng từ Repository nếu danh sách trống
       if (sortedPoints.isEmpty) {
         final repo = RouteRepository();
-        sortedPoints = await repo.todayPoints();
+        sortedPoints = await repo.fetchTodayPoints();
       }
 
       // Gọi API lấy tọa độ đường đi để vẽ lên bản đồ
